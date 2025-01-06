@@ -100,8 +100,8 @@ const Content = () => {
       />
       <InfoCard
         data={`$${poolFeesForDisplay}`}
-        label="Fees Earned (All Time)"
-        footer="TODO index only past 24h"
+        label="Pool Fees Earned"
+        footer="USDC"
       />
       <Deposit shareWorth={shareWorth} />
       <Withdraw
