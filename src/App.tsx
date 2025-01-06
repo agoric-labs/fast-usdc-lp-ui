@@ -28,14 +28,9 @@ const mainnet = {
 };
 
 function App() {
-  const { themeClass, setColorMode, setTheme } = useTheme();
+  const { themeClass } = useTheme();
   const [errorId, setErrorId] = useState<ToastId | undefined>(undefined);
   const [error, setError] = useState<unknown | null>(null);
-
-  useEffect(() => {
-    setColorMode("light");
-    setTheme("light");
-  }, [setTheme, setColorMode]);
 
   useEffect(() => {
     if (!error || (errorId && toast.isActive(errorId))) return;
@@ -50,12 +45,13 @@ function App() {
   };
 
   return (
-    <ThemeProvider forceColorMode="light" defaultTheme="light">
+    <ThemeProvider>
       <div className={themeClass}>
         <AgoricProvider
           wallets={wallets.extension}
           agoricNetworkConfigs={[localnet, mainnet]}
           onConnectionError={onError}
+          modalTheme={{ defaultTheme: "light" }}
         >
           <Header />
           <Content />
