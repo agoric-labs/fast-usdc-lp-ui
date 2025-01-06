@@ -5,6 +5,7 @@ import { useState } from "react";
 import clsx from "clsx";
 import { divideBy } from "@agoric/zoe/src/contractSupport/ratio";
 import { toast } from "react-toastify";
+import { Oval } from "react-loader-spinner";
 
 interface Props {
   shareWorth: ReturnType<typeof makeRatio> | undefined;
@@ -12,6 +13,7 @@ interface Props {
 
 const Deposit = ({ shareWorth }: Props) => {
   const [value, setValue] = useState<bigint | null>(null);
+  const [inProgress, setInProgress] = useState(false);
   const { purses, makeOffer } = useAgoric();
   const usdcPurseAmount = purses?.find(
     ({ pursePetname }) => pursePetname === "USDC"
@@ -19,9 +21,11 @@ const Deposit = ({ shareWorth }: Props) => {
   const usdcBalance = usdcPurseAmount?.value ?? 0n;
 
   const isMaxExceeded = !!value && value > usdcBalance;
-  const isDisabled = !value || !shareWorth || !usdcPurseAmount || isMaxExceeded;
+  const isDisabled =
+    !value || !shareWorth || !usdcPurseAmount || isMaxExceeded || !makeOffer;
 
   const executeOffer = () => {
+    if (inProgress) return;
     const usdcAmount = harden({ brand: usdcPurseAmount.brand, value });
     const fastLPAmount = divideBy(usdcAmount, shareWorth);
     const proposal = {
@@ -39,19 +43,24 @@ const Deposit = ({ shareWorth }: Props) => {
       callPipe: [["makeDepositInvitation", []]],
     };
 
-    makeOffer?.(
+    assert(makeOffer);
+    setInProgress(true);
+    makeOffer(
       invitationSpec,
       proposal,
       undefined,
       (update: { status: string; data?: unknown }) => {
         if (update.status === "error") {
           toast.error(`Offer Error: ${update.data}`);
+          setInProgress(false);
         }
         if (update.status === "accepted") {
           toast.success("Offer Accepted");
+          setInProgress(false);
         }
         if (update.status === "refunded") {
           toast.warning("Offer Refunded");
+          setInProgress(false);
         }
       }
     );
@@ -84,11 +93,21 @@ const Deposit = ({ shareWorth }: Props) => {
         onClick={executeOffer}
         disabled={isDisabled}
         className={clsx(
-          "w-full bg-agoric-red p-2 px-3 h-12 rounded-lg text-white hover:bg-opacity-85 active:bg-opacity-70 active:scale-95 transition-all outline-none ring-offset-2 focus:ring-2",
-          isDisabled && "bg-gray-300 cursor-not-allowed"
+          "w-full flex flex-row items-center justify-center bg-agoric-red p-2 px-3 h-12 rounded-lg text-white hover:bg-opacity-85 active:bg-opacity-70 active:scale-95 transition-all outline-none ring-offset-2 focus:ring-2",
+          (isDisabled || inProgress) && "cursor-not-allowed",
+          isDisabled && "bg-gray-300"
         )}
       >
-        Deposit
+        {inProgress ? (
+          <Oval
+            height={24}
+            width={24}
+            color="white"
+            secondaryColor="lightgray"
+          />
+        ) : (
+          "Deposit"
+        )}
       </button>
     </div>
   );
